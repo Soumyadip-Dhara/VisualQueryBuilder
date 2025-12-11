@@ -1,0 +1,332 @@
+<p-toast></p-toast>
+
+<div class="query-builder-container">
+  <h1><i class="pi pi-database"></i> Visual Query Builder</h1>
+
+  <div class="builder-section">
+    <p-card header="Step 1: Select Schema and Tables">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="schema">Schema</label>
+          <p-dropdown
+            id="schema"
+            [options]="schemas"
+            [(ngModel)]="selectedSchema"
+            optionLabel="schemaName"
+            optionValue="schemaName"
+            placeholder="Select a schema"
+            (onChange)="onSchemaChange()"
+            [style]="{'width':'100%'}"
+          ></p-dropdown>
+        </div>
+
+        <div class="form-field" *ngIf="selectedSchema">
+          <label for="tables">Tables</label>
+          <p-multiSelect
+            id="tables"
+            [options]="tables"
+            [(ngModel)]="selectedTables"
+            optionLabel="tableName"
+            placeholder="Select tables"
+            [style]="{'width':'100%'}"
+            (onChange)="onTablesChange($event.value)"
+          ></p-multiSelect>
+        </div>
+      </div>
+    </p-card>
+  </div>
+
+  <div class="builder-section" *ngIf="selectedTables.length > 0">
+    <p-card header="Step 2: Select Columns">
+      <p-accordion [multiple]="true">
+        <p-accordionTab *ngFor="let table of selectedTables" [header]="table.tableName">
+          <div class="columns-grid">
+            <div
+              *ngFor="let column of getTableColumns(table.tableName)"
+              class="column-item"
+              (click)="addColumn(column)"
+            >
+              <i class="pi pi-plus-circle"></i>
+              <span class="column-name">{{ column.columnName }}</span>
+              <span class="column-type">{{ column.dataType }}</span>
+              <i *ngIf="column.isPrimaryKey" class="pi pi-key" title="Primary Key"></i>
+              <i *ngIf="column.isForeignKey" class="pi pi-link" title="Foreign Key"></i>
+            </div>
+          </div>
+        </p-accordionTab>
+      </p-accordion>
+
+      <div class="selected-columns" *ngIf="selectedColumns.length > 0">
+        <h3>Selected Columns</h3>
+        <div class="chips-container">
+          <p-chip
+            *ngFor="let col of selectedColumns; let i = index"
+            [label]="col.tableName + '.' + col.columnName"
+            [removable]="true"
+            (onRemove)="removeColumn(i)"
+          ></p-chip>
+        </div>
+      </div>
+    </p-card>
+  </div>
+
+  <div class="builder-section" *ngIf="selectedTables.length > 1">
+    <p-card header="Step 3: Configure Joins (Optional)">
+      <div class="action-buttons">
+        <p-button
+          label="Add Join"
+          icon="pi pi-plus"
+          (onClick)="openJoinDialog()"
+        ></p-button>
+      </div>
+
+      <div class="joins-list" *ngIf="joins.length > 0">
+        <div *ngFor="let join of joins; let i = index" class="join-item">
+          <span>
+            {{ join.leftTable }}.{{ join.leftColumn }}
+            <strong>{{ join.joinType }}</strong>
+            {{ join.rightTable }}.{{ join.rightColumn }}
+          </span>
+          <p-button
+            icon="pi pi-trash"
+            [text]="true"
+            severity="danger"
+            (onClick)="removeJoin(i)"
+          ></p-button>
+        </div>
+      </div>
+    </p-card>
+  </div>
+
+  <div class="builder-section" *ngIf="selectedColumns.length > 0">
+    <p-card header="Step 4: Add Filters (Optional)">
+      <div class="action-buttons">
+        <p-button
+          label="Add Condition"
+          icon="pi pi-filter"
+          (onClick)="openWhereDialog()"
+        ></p-button>
+      </div>
+
+      <div class="where-list" *ngIf="whereConditions.length > 0">
+        <div *ngFor="let where of whereConditions; let i = index" class="where-item">
+          <span *ngIf="i > 0 && where.logicalOperator" class="logical-op">
+            {{ where.logicalOperator }}
+          </span>
+          <span>
+            {{ where.tableName }}.{{ where.columnName }}
+            {{ where.operator }}
+            "{{ where.value }}"
+          </span>
+          <p-button
+            icon="pi pi-trash"
+            [text]="true"
+            severity="danger"
+            (onClick)="removeWhere(i)"
+          ></p-button>
+        </div>
+      </div>
+    </p-card>
+  </div>
+
+  <div class="builder-section" *ngIf="selectedColumns.length > 0">
+    <p-card header="Step 5: Execute Query">
+      <div class="action-buttons">
+        <p-button
+          label="Execute Query"
+          icon="pi pi-play"
+          (onClick)="executeQuery()"
+          [loading]="loading"
+          severity="success"
+        ></p-button>
+        <p-button
+          label="Clear"
+          icon="pi pi-times"
+          (onClick)="clearQuery()"
+          severity="secondary"
+        ></p-button>
+      </div>
+
+      <div class="sql-preview" *ngIf="generatedSql">
+        <h3>Generated SQL</h3>
+        <pre>{{ generatedSql }}</pre>
+      </div>
+    </p-card>
+  </div>
+
+  <div class="builder-section" *ngIf="queryResult">
+    <p-card header="Query Results">
+      <p>Total Rows: {{ queryResult.totalRows }}</p>
+      <p-table
+        [value]="queryResult.data"
+        [paginator]="true"
+        [rows]="10"
+        [rowsPerPageOptions]="[10, 25, 50]"
+        [scrollable]="true"
+        scrollHeight="400px"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th *ngFor="let col of getResultColumns()">
+              {{ col }}
+            </th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+          <tr>
+            <td *ngFor="let col of row | keyvalue">
+              {{ col.value }}
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-card>
+  </div>
+</div>
+
+<!-- Join Dialog -->
+<p-dialog
+  header="Add Join"
+  [(visible)]="showJoinDialog"
+  [modal]="true"
+  [style]="{width: '50vw'}"
+>
+  <div class="dialog-content">
+    <div class="form-field">
+      <label>Join Type</label>
+      <p-dropdown
+        [options]="joinTypes"
+        [(ngModel)]="newJoin.joinType"
+        optionLabel="label"
+        optionValue="value"
+        [style]="{'width':'100%'}"
+      ></p-dropdown>
+    </div>
+
+    <div class="form-field">
+      <label>Left Table</label>
+      <p-dropdown
+        [options]="selectedTables"
+        [(ngModel)]="newJoin.leftTable"
+        optionLabel="tableName"
+        optionValue="tableName"
+        [style]="{'width':'100%'}"
+      ></p-dropdown>
+    </div>
+
+    <div class="form-field" *ngIf="newJoin.leftTable">
+      <label>Left Column</label>
+      <p-dropdown
+        [options]="getTableColumns(newJoin.leftTable)"
+        [(ngModel)]="newJoin.leftColumn"
+        optionLabel="columnName"
+        optionValue="columnName"
+        [style]="{'width':'100%'}"
+      ></p-dropdown>
+    </div>
+
+    <div class="form-field">
+      <label>Right Table</label>
+      <p-dropdown
+        [options]="selectedTables"
+        [(ngModel)]="newJoin.rightTable"
+        optionLabel="tableName"
+        optionValue="tableName"
+        [style]="{'width':'100%'}"
+      ></p-dropdown>
+    </div>
+
+    <div class="form-field" *ngIf="newJoin.rightTable">
+      <label>Right Column</label>
+      <p-dropdown
+        [options]="getTableColumns(newJoin.rightTable)"
+        [(ngModel)]="newJoin.rightColumn"
+        optionLabel="columnName"
+        optionValue="columnName"
+        [style]="{'width':'100%'}"
+      ></p-dropdown>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <p-button
+      label="Cancel"
+      icon="pi pi-times"
+      (onClick)="showJoinDialog = false"
+      severity="secondary"
+    ></p-button>
+    <p-button
+      label="Add"
+      icon="pi pi-check"
+      (onClick)="addJoin()"
+    ></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Where Dialog -->
+<p-dialog
+  header="Add Filter Condition"
+  [(visible)]="showWhereDialog"
+  [modal]="true"
+  [style]="{width: '50vw'}"
+>
+  <div class="dialog-content">
+    <div class="form-field" *ngIf="whereConditions.length > 0">
+      <label>Logical Operator</label>
+      <p-dropdown
+        [options]="logicalOperators"
+        [(ngModel)]="newWhere.logicalOperator"
+        optionLabel="label"
+        optionValue="value"
+        [style]="{'width':'100%'}"
+      ></p-dropdown>
+    </div>
+
+    <div class="form-field">
+      <label>Column</label>
+      <p-dropdown
+        [options]="selectedColumns"
+        [(ngModel)]="newWhere"
+        optionLabel="columnName"
+        [style]="{'width':'100%'}"
+        (onChange)="onWhereColumnSelect($event.value)"
+      ></p-dropdown>
+    </div>
+
+    <div class="form-field">
+      <label>Operator</label>
+      <p-dropdown
+        [options]="operators"
+        [(ngModel)]="newWhere.operator"
+        optionLabel="label"
+        optionValue="value"
+        [style]="{'width':'100%'}"
+      ></p-dropdown>
+    </div>
+
+    <div class="form-field">
+      <label>Value</label>
+      <input
+        type="text"
+        pInputText
+        [(ngModel)]="newWhere.value"
+        [style]="{'width':'100%'}"
+      />
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <p-button
+      label="Cancel"
+      icon="pi pi-times"
+      (onClick)="showWhereDialog = false"
+      severity="secondary"
+    ></p-button>
+    <p-button
+      label="Add"
+      icon="pi pi-check"
+      (onClick)="addWhere()"
+    ></p-button>
+  </ng-template>
+</p-dialog>
+

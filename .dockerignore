@@ -1,0 +1,30 @@
+# Git
+.git
+.gitignore
+
+# Node
+node_modules
+npm-debug.log
+
+# .NET
+bin
+obj
+*.user
+*.suo
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dist
+dist
+out-tsc
+
+# Build
+*.log

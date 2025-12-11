@@ -1,0 +1,6 @@
+@QueryBuilderAPI_HostAddress = http://localhost:5190
+
+GET {{QueryBuilderAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
