@@ -440,9 +440,10 @@ The production build will be in `Frontend/dist/frontend/`
 
 2. **Sample data not loaded**:
    ```bash
-   # Manually load the sample data
+   # From the project root directory
    docker exec -i querybuilder-postgres psql -U postgres -d querybuilder < database-setup.sql
    ```
+   Note: Run this from the repository root where `database-setup.sql` is located.
 
 3. **Connection refused errors**:
    - Wait for PostgreSQL to fully start (can take 10-30 seconds)
@@ -523,6 +524,8 @@ docker exec -it querybuilder-postgres psql -U postgres -d querybuilder
 # Reset database (Docker)
 docker-compose down -v && docker-compose up -d
 ```
+
+> **Note:** These Docker commands use the container name `querybuilder-postgres` which is set in `docker-compose.yml`. If you've modified the container name, adjust the commands accordingly.
 
 ### Building
 ```bash
