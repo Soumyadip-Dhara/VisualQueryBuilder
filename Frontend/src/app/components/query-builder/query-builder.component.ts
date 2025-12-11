@@ -179,6 +179,8 @@ export class QueryBuilderComponent implements OnInit {
   }
 
   onTableSelect(table: TableInfo): void {
+    if (!table) return;
+    
     this.metadataService.getColumns(table.schemaName, table.tableName).subscribe({
       next: (columns) => {
         columns.forEach(col => {
@@ -201,6 +203,16 @@ export class QueryBuilderComponent implements OnInit {
         });
       }
     });
+  }
+
+  onTablesChange(tables: TableInfo[]): void {
+    if (!tables || tables.length === 0) return;
+    
+    // Load columns for the most recently selected table
+    const lastTable = tables[tables.length - 1];
+    if (lastTable) {
+      this.onTableSelect(lastTable);
+    }
   }
 
   addColumn(column: ColumnInfo): void {
@@ -350,6 +362,19 @@ export class QueryBuilderComponent implements OnInit {
 
   getTableColumns(tableName: string): ColumnInfo[] {
     return this.availableColumns.filter(c => c.tableName === tableName);
+  }
+
+  getResultColumns(): string[] {
+    if (!this.queryResult || !this.queryResult.data || this.queryResult.data.length === 0) {
+      return [];
+    }
+    return Object.keys(this.queryResult.data[0]);
+  }
+
+  onWhereColumnSelect(column: SelectedColumn): void {
+    this.newWhere.schemaName = column.schemaName;
+    this.newWhere.tableName = column.tableName;
+    this.newWhere.columnName = column.columnName;
   }
 }
 

@@ -29,7 +29,7 @@
             optionLabel="tableName"
             placeholder="Select tables"
             [style]="{'width':'100%'}"
-            (onChange)="onTableSelect($event.value[0])"
+            (onChange)="onTablesChange($event.value)"
           ></p-multiSelect>
         </div>
       </div>
@@ -167,8 +167,8 @@
       >
         <ng-template pTemplate="header">
           <tr>
-            <th *ngFor="let col of queryResult.data[0] | keyvalue">
-              {{ col.key }}
+            <th *ngFor="let col of getResultColumns()">
+              {{ col }}
             </th>
           </tr>
         </ng-template>
@@ -289,7 +289,7 @@
         [(ngModel)]="newWhere"
         optionLabel="columnName"
         [style]="{'width':'100%'}"
-        (onChange)="newWhere.schemaName = $event.value.schemaName; newWhere.tableName = $event.value.tableName; newWhere.columnName = $event.value.columnName"
+        (onChange)="onWhereColumnSelect($event.value)"
       ></p-dropdown>
     </div>
 
