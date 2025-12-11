@@ -2,6 +2,51 @@
 
 A powerful Visual Query Builder application that allows users to build and execute SQL queries through an intuitive drag-and-drop interface. Built with Angular frontend, .NET Core backend, and PostgreSQL database.
 
+> **🎯 Want to run it right now?** → See **[RUN.md](RUN.md)** for the simplest instructions!
+
+## 🚀 Quick Start
+
+Get the application running in 5 minutes:
+
+### Prerequisites
+```bash
+# Verify you have the required tools installed:
+node --version    # Should be v18 or higher
+dotnet --version  # Should be 8.0 or higher
+docker --version  # For easy database setup (optional)
+```
+
+### Option 1: Using Docker (Recommended - Easiest)
+
+1. **Start the database with sample data:**
+   ```bash
+   docker-compose up -d
+   ```
+
+2. **Start the backend API:**
+   ```bash
+   cd Backend/QueryBuilderAPI
+   dotnet run
+   ```
+   Backend runs at http://localhost:5000
+
+3. **Start the frontend (in a new terminal):**
+   ```bash
+   cd Frontend
+   npm install
+   npm start
+   ```
+   Frontend runs at http://localhost:4200
+
+4. **Open your browser:**
+   Navigate to http://localhost:4200 and start building queries!
+
+### Option 2: Manual Setup
+
+If you prefer not to use Docker, see the [detailed setup instructions](#setup-instructions) below.
+
+> 💡 **First Time Users:** Check out the [Quick Start Guide](QUICK_START.md) for sample queries to try!
+
 ## Features
 
 - 🎯 **Schema & Table Selection**: Select database schemas and tables from dropdown menus
@@ -36,8 +81,48 @@ Before running this application, make sure you have:
 
 - **Node.js** (v18 or higher) and npm
 - **.NET SDK 8.0** or higher
-- **PostgreSQL** database server
+- **Docker** (for easy database setup) OR **PostgreSQL** database server
 - **Angular CLI** (`npm install -g @angular/cli`)
+
+### Verify Prerequisites
+
+Run these commands to check if you have the required software:
+
+```bash
+# Check Node.js version
+node --version
+
+# Check npm version
+npm --version
+
+# Check .NET SDK version
+dotnet --version
+
+# Check Docker (optional, for easy setup)
+docker --version
+
+# Check PostgreSQL (optional, if not using Docker)
+psql --version
+```
+
+### Install Missing Prerequisites
+
+**Node.js and npm:**
+- Download from https://nodejs.org/ (LTS version recommended)
+
+**.NET SDK 8.0:**
+- Download from https://dotnet.microsoft.com/download
+
+**Docker:**
+- Download from https://www.docker.com/products/docker-desktop
+
+**Angular CLI:**
+```bash
+npm install -g @angular/cli
+```
+
+**PostgreSQL** (only if not using Docker):
+- Download from https://www.postgresql.org/download/
 
 ## Project Structure
 
@@ -284,24 +369,91 @@ The production build will be in `Frontend/dist/frontend/`
 ### Connection Issues
 
 1. **Backend not connecting to database**:
-   - Verify PostgreSQL is running
-   - Check connection string in `appsettings.json`
+   - Verify PostgreSQL is running: `docker ps` (for Docker) or `pg_isready` (for local)
+   - Check connection string in `Backend/QueryBuilderAPI/appsettings.json`
    - Ensure database exists and user has proper permissions
+   - Check database logs: `docker logs querybuilder-postgres`
 
 2. **Frontend not connecting to backend**:
-   - Verify backend is running on correct port
-   - Check API URL in environment files
-   - Ensure CORS is properly configured
+   - Verify backend is running on correct port (should see `Now listening on: http://localhost:5000`)
+   - Check API URL in `Frontend/src/environments/environment.ts`
+   - Ensure CORS is properly configured in backend
+   - Check browser console for error messages
+
+3. **Port already in use**:
+   ```bash
+   # Linux/Mac - Kill process on port 5000 (backend)
+   lsof -ti:5000 | xargs kill -9
+   
+   # Linux/Mac - Kill process on port 4200 (frontend)
+   lsof -ti:4200 | xargs kill -9
+   
+   # Windows - Find and kill process
+   netstat -ano | findstr :5000
+   taskkill /PID <PID> /F
+   ```
+   
+   Or use a different port:
+   ```bash
+   # Frontend on different port
+   cd Frontend && ng serve --port 4201
+   ```
 
 ### Build Issues
 
 1. **Frontend build warnings about bundle size**:
    - These are expected with PrimeNG
    - Budget limits are configured in `angular.json`
+   - Warnings don't prevent the app from running
 
 2. **Backend package restore fails**:
-   - Ensure .NET 8.0 SDK is installed
-   - Try: `dotnet nuget locals all --clear`
+   - Ensure .NET 8.0 SDK is installed: `dotnet --version`
+   - Clear NuGet cache: `dotnet nuget locals all --clear`
+   - Try restore again: `dotnet restore`
+
+3. **Frontend npm install fails**:
+   - Clear npm cache: `npm cache clean --force`
+   - Delete node_modules and package-lock.json:
+     ```bash
+     cd Frontend
+     rm -rf node_modules package-lock.json
+     npm install
+     ```
+   - Ensure Node.js version is v18 or higher: `node --version`
+
+### Database Issues
+
+1. **Database container won't start**:
+   ```bash
+   # Check Docker daemon is running
+   docker ps
+   
+   # View container logs
+   docker logs querybuilder-postgres
+   
+   # Remove and recreate container
+   docker-compose down -v
+   docker-compose up -d
+   ```
+
+2. **Sample data not loaded**:
+   ```bash
+   # Manually load the sample data
+   docker exec -i querybuilder-postgres psql -U postgres -d querybuilder < database-setup.sql
+   ```
+
+3. **Connection refused errors**:
+   - Wait for PostgreSQL to fully start (can take 10-30 seconds)
+   - Check healthcheck: `docker inspect querybuilder-postgres`
+   - Verify port 5432 is not used by another PostgreSQL instance
+
+### Common Error Messages
+
+- **"No such file or directory"**: Ensure you're in the correct directory
+- **"dotnet: command not found"**: Install .NET SDK 8.0
+- **"ng: command not found"**: Install Angular CLI with `npm install -g @angular/cli`
+- **"npm: command not found"**: Install Node.js
+- **"Cannot connect to database"**: Ensure PostgreSQL is running and connection string is correct
 
 ## Security Considerations
 
@@ -315,6 +467,94 @@ For production use, please implement:
 - HTTPS enforcement
 - Database user with minimal required permissions
 - Proper error handling without exposing sensitive information
+
+## Common Commands Reference
+
+Quick reference for common tasks:
+
+### Starting the Application
+```bash
+# Start database (Docker)
+docker-compose up -d
+
+# Start backend
+cd Backend/QueryBuilderAPI && dotnet run
+
+# Start frontend (in new terminal)
+cd Frontend && npm start
+
+# Access application
+# Frontend: http://localhost:4200
+# Backend API: http://localhost:5000
+```
+
+### Stopping the Application
+```bash
+# Stop frontend: Press Ctrl+C in terminal
+
+# Stop backend: Press Ctrl+C in terminal
+
+# Stop database
+docker-compose down
+
+# Stop database and remove data
+docker-compose down -v
+```
+
+### Development Mode (with auto-reload)
+```bash
+# Backend with hot reload
+cd Backend/QueryBuilderAPI && dotnet watch run
+
+# Frontend with hot reload
+cd Frontend && ng serve
+```
+
+### Database Operations
+```bash
+# View database logs (Docker)
+docker logs querybuilder-postgres
+
+# Connect to database (Docker)
+docker exec -it querybuilder-postgres psql -U postgres -d querybuilder
+
+# Reset database (Docker)
+docker-compose down -v && docker-compose up -d
+```
+
+### Building
+```bash
+# Build backend
+cd Backend/QueryBuilderAPI && dotnet build
+
+# Build frontend
+cd Frontend && ng build
+
+# Build for production
+cd Backend/QueryBuilderAPI && dotnet publish -c Release
+cd Frontend && ng build --configuration production
+```
+
+### Troubleshooting
+```bash
+# Check if ports are in use
+# Backend port (5000)
+lsof -ti:5000  # Mac/Linux
+netstat -ano | findstr :5000  # Windows
+
+# Frontend port (4200)
+lsof -ti:4200  # Mac/Linux
+netstat -ano | findstr :4200  # Windows
+
+# View Docker containers
+docker ps
+
+# Check if PostgreSQL is ready
+docker exec querybuilder-postgres pg_isready
+
+# Reinstall frontend dependencies
+cd Frontend && rm -rf node_modules package-lock.json && npm install
+```
 
 ## Contributing
 
