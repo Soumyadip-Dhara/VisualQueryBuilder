@@ -82,7 +82,8 @@ Before running this application, make sure you have:
 - **Node.js** (v18 or higher) and npm
 - **.NET SDK 8.0** or higher
 - **Docker** (for easy database setup) OR **PostgreSQL** database server
-- **Angular CLI** (`npm install -g @angular/cli`)
+
+> **Note:** Angular CLI is optional - you can use `npm start` instead of `ng serve` (Angular CLI is included as a project dependency).
 
 ### Verify Prerequisites
 
@@ -116,13 +117,14 @@ psql --version
 **Docker:**
 - Download from https://www.docker.com/products/docker-desktop
 
-**Angular CLI:**
+**PostgreSQL** (only if not using Docker):
+- Download from https://www.postgresql.org/download/
+
+**Angular CLI** (optional, for global `ng` commands):
 ```bash
 npm install -g @angular/cli
 ```
-
-**PostgreSQL** (only if not using Docker):
-- Download from https://www.postgresql.org/download/
+> Note: Not required for running the app - use `npm start` instead of `ng serve`
 
 ## Project Structure
 
