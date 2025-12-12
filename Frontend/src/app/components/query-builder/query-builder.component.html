@@ -392,16 +392,16 @@
       >
         <ng-template pTemplate="header">
           <tr>
-            <th *ngFor="let col of getResultColumns()">
-              {{ col }}
-            </th>
+        <th *ngFor="let col of getResultColumns()">
+          {{ col }}
+        </th>
           </tr>
         </ng-template>
         <ng-template pTemplate="body" let-row>
-          <tr>
-            <td *ngFor="let col of row | keyvalue">
-              {{ col.value }}
-            </td>
+          <tr (click)="onRowClick(row)">
+        <td *ngFor="let col of getResultColumns()">
+          {{ row[col] }}
+        </td>
           </tr>
         </ng-template>
       </p-table>
