@@ -195,9 +195,155 @@
     </p-card>
   </div>
 
-  <!-- Step 5: Execute Query -->
+  <!-- Step 5: Sort Results (ORDER BY) -->
   <div class="builder-section" *ngIf="selectedColumns.length > 0">
-    <p-card header="🚀 Step 5: Run Your Query">
+    <p-card header="🔢 Step 5: Sort Results (Optional)">
+      <div class="helper-text">
+        <i class="pi pi-info-circle"></i>
+        <span>Choose how to sort your results. You can sort by multiple columns.</span>
+      </div>
+
+      <div class="action-buttons">
+        <p-button
+          label="Add Sorting"
+          icon="pi pi-sort"
+          (onClick)="openOrderByDialog()"
+        ></p-button>
+      </div>
+
+      <div class="order-list" *ngIf="orderByList.length > 0">
+        <div *ngFor="let order of orderByList; let i = index" class="order-item">
+          <span>
+            📁 {{ order.tableName }}.{{ order.columnName }}
+            <strong>{{ order.direction }}</strong>
+          </span>
+          <p-button
+            icon="pi pi-trash"
+            [text]="true"
+            severity="danger"
+            (onClick)="removeOrderBy(i)"
+          ></p-button>
+        </div>
+      </div>
+    </p-card>
+  </div>
+
+  <!-- Step 6: Group Results (GROUP BY) -->
+  <div class="builder-section" *ngIf="selectedColumns.length > 0">
+    <p-card header="📊 Step 6: Group Results (Optional)">
+      <div class="helper-text">
+        <i class="pi pi-info-circle"></i>
+        <span>Group rows that have the same values in specified columns. Useful for aggregations like COUNT, SUM, etc.</span>
+      </div>
+
+      <div class="action-buttons">
+        <p-button
+          label="Add Grouping"
+          icon="pi pi-sitemap"
+          (onClick)="openGroupByDialog()"
+        ></p-button>
+      </div>
+
+      <div class="group-list" *ngIf="groupByList.length > 0">
+        <div *ngFor="let group of groupByList; let i = index" class="group-item">
+          <span>
+            📁 {{ group.tableName }}.{{ group.columnName }}
+          </span>
+          <p-button
+            icon="pi pi-trash"
+            [text]="true"
+            severity="danger"
+            (onClick)="removeGroupBy(i)"
+          ></p-button>
+        </div>
+      </div>
+    </p-card>
+  </div>
+
+  <!-- Step 7: Filter Groups (HAVING) -->
+  <div class="builder-section" *ngIf="groupByList.length > 0">
+    <p-card header="🎯 Step 7: Filter Groups (Optional)">
+      <div class="helper-text">
+        <i class="pi pi-info-circle"></i>
+        <span>Add conditions to filter grouped results. HAVING is like WHERE but for grouped data.</span>
+      </div>
+
+      <div class="action-buttons">
+        <p-button
+          label="Add HAVING Condition"
+          icon="pi pi-filter-slash"
+          (onClick)="openHavingDialog()"
+        ></p-button>
+      </div>
+
+      <div class="having-list" *ngIf="havingConditions.length > 0">
+        <div *ngFor="let having of havingConditions; let i = index" class="having-item">
+          <span *ngIf="i > 0 && having.logicalOperator" class="logical-op">
+            {{ having.logicalOperator }}
+          </span>
+          <span>
+            📁 {{ having.tableName }}.{{ having.columnName }}
+            <strong>{{ having.operator }}</strong>
+            "{{ having.value }}"
+          </span>
+          <p-button
+            icon="pi pi-trash"
+            [text]="true"
+            severity="danger"
+            (onClick)="removeHaving(i)"
+          ></p-button>
+        </div>
+      </div>
+    </p-card>
+  </div>
+
+  <!-- Step 8: Limit and Offset -->
+  <div class="builder-section" *ngIf="selectedColumns.length > 0">
+    <p-card header="📏 Step 8: Limit Results (Optional)">
+      <div class="helper-text">
+        <i class="pi pi-info-circle"></i>
+        <span>Control how many rows to return and where to start. Useful for pagination.</span>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="limit">
+            <i class="pi pi-list"></i>
+            Limit (Max Rows)
+          </label>
+          <p-inputNumber
+            id="limit"
+            [(ngModel)]="limitValue"
+            placeholder="e.g., 100"
+            [showButtons]="true"
+            [min]="1"
+            [step]="10"
+            [style]="{'width':'100%'}"
+          ></p-inputNumber>
+        </div>
+
+        <div class="form-field">
+          <label for="offset">
+            <i class="pi pi-forward"></i>
+            Offset (Skip Rows)
+          </label>
+          <p-inputNumber
+            id="offset"
+            [(ngModel)]="offsetValue"
+            placeholder="e.g., 0"
+            [showButtons]="true"
+            [min]="0"
+            [step]="10"
+            [style]="{'width':'100%'}"
+          ></p-inputNumber>
+        </div>
+      </div>
+    </p-card>
+  </div>
+
+  <!-- Step 9: Execute Query -->
+  <div class="builder-section" *ngIf="selectedColumns.length > 0">
+    <p-card header="🚀 Step 9: Run Your Query">
       <div class="helper-text">
         <i class="pi pi-info-circle"></i>
         <span>Ready to see your data? Click "Execute Query" to run it. The system will automatically generate the SQL for you!</span>
@@ -451,6 +597,197 @@
       label="Add Filter"
       icon="pi pi-check"
       (onClick)="addWhere()"
+    ></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Order By Dialog -->
+<p-dialog
+  header="🔢 Add Sorting"
+  [(visible)]="showOrderByDialog"
+  [modal]="true"
+  [style]="{width: '600px'}"
+>
+  <div class="dialog-content">
+    <div class="helper-text">
+      <i class="pi pi-info-circle"></i>
+      <span>Choose a column to sort by and the sort direction.</span>
+    </div>
+
+    <div class="form-field">
+      <label>
+        <i class="pi pi-list"></i>
+        Select Column
+      </label>
+      <p-dropdown
+        [options]="selectedColumns"
+        [(ngModel)]="newOrderBy"
+        optionLabel="columnName"
+        placeholder="Choose a column..."
+        [style]="{'width':'100%'}"
+        (onChange)="onOrderByColumnSelect($event.value)"
+      ></p-dropdown>
+    </div>
+
+    <div class="form-field">
+      <label>
+        <i class="pi pi-sort"></i>
+        Sort Direction
+      </label>
+      <p-dropdown
+        [options]="sortDirections"
+        [(ngModel)]="newOrderBy.direction"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Choose direction..."
+        [style]="{'width':'100%'}"
+      ></p-dropdown>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <p-button
+      label="Cancel"
+      icon="pi pi-times"
+      (onClick)="showOrderByDialog = false"
+      severity="secondary"
+    ></p-button>
+    <p-button
+      label="Add Sorting"
+      icon="pi pi-check"
+      (onClick)="addOrderBy()"
+    ></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Group By Dialog -->
+<p-dialog
+  header="📊 Add Grouping"
+  [(visible)]="showGroupByDialog"
+  [modal]="true"
+  [style]="{width: '600px'}"
+>
+  <div class="dialog-content">
+    <div class="helper-text">
+      <i class="pi pi-info-circle"></i>
+      <span>Select a column to group by. Rows with the same value in this column will be grouped together.</span>
+    </div>
+
+    <div class="form-field">
+      <label>
+        <i class="pi pi-list"></i>
+        Select Column
+      </label>
+      <p-dropdown
+        [options]="selectedColumns"
+        [(ngModel)]="newGroupBy"
+        optionLabel="columnName"
+        placeholder="Choose a column..."
+        [style]="{'width':'100%'}"
+        (onChange)="onGroupByColumnSelect($event.value)"
+      ></p-dropdown>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <p-button
+      label="Cancel"
+      icon="pi pi-times"
+      (onClick)="showGroupByDialog = false"
+      severity="secondary"
+    ></p-button>
+    <p-button
+      label="Add Grouping"
+      icon="pi pi-check"
+      (onClick)="addGroupBy()"
+    ></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Having Dialog -->
+<p-dialog
+  header="🎯 Add HAVING Condition"
+  [(visible)]="showHavingDialog"
+  [modal]="true"
+  [style]="{width: '600px'}"
+>
+  <div class="dialog-content">
+    <div class="helper-text">
+      <i class="pi pi-info-circle"></i>
+      <span>Filter grouped results. HAVING works on aggregated data after GROUP BY.</span>
+    </div>
+
+    <div class="form-field" *ngIf="havingConditions.length > 0">
+      <label>
+        <i class="pi pi-sitemap"></i>
+        Combine with Previous Using
+      </label>
+      <p-dropdown
+        [options]="logicalOperators"
+        [(ngModel)]="newHaving.logicalOperator"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Choose AND or OR..."
+        [style]="{'width':'100%'}"
+      ></p-dropdown>
+    </div>
+
+    <div class="form-field">
+      <label>
+        <i class="pi pi-list"></i>
+        Select Column to Filter
+      </label>
+      <p-dropdown
+        [options]="selectedColumns"
+        [(ngModel)]="newHaving"
+        optionLabel="columnName"
+        placeholder="Choose a column..."
+        [style]="{'width':'100%'}"
+        (onChange)="onHavingColumnSelect($event.value)"
+      ></p-dropdown>
+    </div>
+
+    <div class="form-field">
+      <label>
+        <i class="pi pi-filter"></i>
+        Comparison Operator
+      </label>
+      <p-dropdown
+        [options]="operators"
+        [(ngModel)]="newHaving.operator"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Choose comparison..."
+        [style]="{'width':'100%'}"
+      ></p-dropdown>
+    </div>
+
+    <div class="form-field">
+      <label>
+        <i class="pi pi-pencil"></i>
+        Value to Compare
+      </label>
+      <input
+        type="text"
+        pInputText
+        [(ngModel)]="newHaving.value"
+        placeholder="Enter value..."
+        [style]="{'width':'100%'}"
+      />
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <p-button
+      label="Cancel"
+      icon="pi pi-times"
+      (onClick)="showHavingDialog = false"
+      severity="secondary"
+    ></p-button>
+    <p-button
+      label="Add HAVING"
+      icon="pi pi-check"
+      (onClick)="addHaving()"
     ></p-button>
   </ng-template>
 </p-dialog>
