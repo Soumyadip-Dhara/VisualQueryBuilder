@@ -1,45 +1,98 @@
 <p-toast></p-toast>
 
 <div class="query-builder-container">
-  <h1><i class="pi pi-database"></i> Visual Query Builder</h1>
+  <!-- Page Header -->
+  <div class="page-header">
+    <h1>
+      <i class="pi pi-database"></i>
+      Visual Query Builder
+    </h1>
+    <p>Build database queries without writing SQL - Just point, click, and go!</p>
+  </div>
 
+  <!-- Progress Tracker -->
+  <div class="progress-tracker">
+    <div class="progress-step" [class.active]="selectedSchemas.length === 0" [class.completed]="selectedSchemas.length > 0">
+      <div class="step-circle">1</div>
+      <div class="step-label" [class.active]="selectedSchemas.length === 0" [class.completed]="selectedSchemas.length > 0">Select Schema</div>
+    </div>
+    <div class="progress-step" [class.active]="selectedSchemas.length > 0 && selectedTables.length === 0" [class.completed]="selectedTables.length > 0">
+      <div class="step-circle">2</div>
+      <div class="step-label" [class.active]="selectedSchemas.length > 0 && selectedTables.length === 0" [class.completed]="selectedTables.length > 0">Choose Tables</div>
+    </div>
+    <div class="progress-step" [class.active]="selectedTables.length > 0 && selectedColumns.length === 0" [class.completed]="selectedColumns.length > 0">
+      <div class="step-circle">3</div>
+      <div class="step-label" [class.active]="selectedTables.length > 0 && selectedColumns.length === 0" [class.completed]="selectedColumns.length > 0">Pick Columns</div>
+    </div>
+    <div class="progress-step" [class.active]="selectedColumns.length > 0 && !queryResult" [class.completed]="queryResult">
+      <div class="step-circle">4</div>
+      <div class="step-label" [class.active]="selectedColumns.length > 0 && !queryResult" [class.completed]="queryResult">Execute</div>
+    </div>
+  </div>
+
+  <!-- Step 1: Schema and Tables -->
   <div class="builder-section">
-    <p-card header="Step 1: Select Schema and Tables">
+    <p-card header="📊 Step 1: Select Your Data Source">
+      <div class="helper-text">
+        <i class="pi pi-info-circle"></i>
+        <span>Start by choosing one or more schemas, then select the tables you want to query data from.</span>
+      </div>
+      
       <div class="form-grid">
         <div class="form-field">
-          <label for="schema">Schema</label>
-          <p-dropdown
+          <label for="schema">
+            <i class="pi pi-folder"></i>
+            Schemas (Database Groups)
+          </label>
+          <p-multiSelect
             id="schema"
             [options]="schemas"
-            [(ngModel)]="selectedSchema"
+            [(ngModel)]="selectedSchemas"
             optionLabel="schemaName"
             optionValue="schemaName"
-            placeholder="Select a schema"
+            placeholder="Choose one or more schemas..."
             (onChange)="onSchemaChange()"
             [style]="{'width':'100%'}"
-          ></p-dropdown>
+            [showToggleAll]="true"
+            [filter]="true"
+            [appendTo]="'body'"
+            [panelStyle]="{'min-width': '100%'}"
+          ></p-multiSelect>
         </div>
 
-        <div class="form-field" *ngIf="selectedSchema">
-          <label for="tables">Tables</label>
+        <div class="form-field" *ngIf="selectedSchemas.length > 0">
+          <label for="tables">
+            <i class="pi pi-table"></i>
+            Tables (Data Collections)
+          </label>
           <p-multiSelect
             id="tables"
             [options]="tables"
             [(ngModel)]="selectedTables"
             optionLabel="tableName"
-            placeholder="Select tables"
+            placeholder="Select one or more tables..."
             [style]="{'width':'100%'}"
             (onChange)="onTablesChange($event.value)"
+            [showToggleAll]="true"
+            [filter]="true"
+            [appendTo]="'body'"
+            [panelStyle]="{'min-width': '100%'}"
           ></p-multiSelect>
         </div>
       </div>
     </p-card>
   </div>
 
+  <!-- Step 2: Select Columns -->
   <div class="builder-section" *ngIf="selectedTables.length > 0">
-    <p-card header="Step 2: Select Columns">
+    <p-card header="📋 Step 2: Choose Data Columns">
+      <div class="helper-text">
+        <i class="pi pi-info-circle"></i>
+        <span>Click on the columns you want to include in your query results. Expand each table to see its columns.</span>
+      </div>
+
       <p-accordion [multiple]="true">
-        <p-accordionTab *ngFor="let table of selectedTables" [header]="table.tableName">
+        <p-accordionTab *ngFor="let table of selectedTables" [header]="'📁 ' + table.tableName">
           <div class="columns-grid">
             <div
               *ngFor="let column of getTableColumns(table.tableName)"
@@ -57,7 +110,7 @@
       </p-accordion>
 
       <div class="selected-columns" *ngIf="selectedColumns.length > 0">
-        <h3>Selected Columns</h3>
+        <h3>Selected Columns ({{ selectedColumns.length }})</h3>
         <div class="chips-container">
           <p-chip
             *ngFor="let col of selectedColumns; let i = index"
@@ -70,11 +123,18 @@
     </p-card>
   </div>
 
+  <!-- Step 3: Configure Joins -->
+  <!-- Step 3: Configure Joins -->
   <div class="builder-section" *ngIf="selectedTables.length > 1">
-    <p-card header="Step 3: Configure Joins (Optional)">
+    <p-card header="🔗 Step 3: Connect Tables (Optional)">
+      <div class="helper-text">
+        <i class="pi pi-info-circle"></i>
+        <span>If you selected multiple tables, define how they relate to each other. This combines data from different tables.</span>
+      </div>
+
       <div class="action-buttons">
         <p-button
-          label="Add Join"
+          label="Add Table Connection"
           icon="pi pi-plus"
           (onClick)="openJoinDialog()"
         ></p-button>
@@ -83,9 +143,9 @@
       <div class="joins-list" *ngIf="joins.length > 0">
         <div *ngFor="let join of joins; let i = index" class="join-item">
           <span>
-            {{ join.leftTable }}.{{ join.leftColumn }}
+            📁 {{ join.leftTable }}.{{ join.leftColumn }}
             <strong>{{ join.joinType }}</strong>
-            {{ join.rightTable }}.{{ join.rightColumn }}
+            📁 {{ join.rightTable }}.{{ join.rightColumn }}
           </span>
           <p-button
             icon="pi pi-trash"
@@ -98,11 +158,17 @@
     </p-card>
   </div>
 
+  <!-- Step 4: Add Filters -->
   <div class="builder-section" *ngIf="selectedColumns.length > 0">
-    <p-card header="Step 4: Add Filters (Optional)">
+    <p-card header="🔍 Step 4: Filter Your Data (Optional)">
+      <div class="helper-text">
+        <i class="pi pi-info-circle"></i>
+        <span>Add conditions to filter which rows appear in your results. For example, "age > 25" or "city = 'New York'".</span>
+      </div>
+
       <div class="action-buttons">
         <p-button
-          label="Add Condition"
+          label="Add Filter Condition"
           icon="pi pi-filter"
           (onClick)="openWhereDialog()"
         ></p-button>
@@ -114,8 +180,8 @@
             {{ where.logicalOperator }}
           </span>
           <span>
-            {{ where.tableName }}.{{ where.columnName }}
-            {{ where.operator }}
+            📁 {{ where.tableName }}.{{ where.columnName }}
+            <strong>{{ where.operator }}</strong>
             "{{ where.value }}"
           </span>
           <p-button
@@ -129,8 +195,14 @@
     </p-card>
   </div>
 
+  <!-- Step 5: Execute Query -->
   <div class="builder-section" *ngIf="selectedColumns.length > 0">
-    <p-card header="Step 5: Execute Query">
+    <p-card header="🚀 Step 5: Run Your Query">
+      <div class="helper-text">
+        <i class="pi pi-info-circle"></i>
+        <span>Ready to see your data? Click "Execute Query" to run it. The system will automatically generate the SQL for you!</span>
+      </div>
+
       <div class="action-buttons">
         <p-button
           label="Execute Query"
@@ -140,30 +212,37 @@
           severity="success"
         ></p-button>
         <p-button
-          label="Clear"
-          icon="pi pi-times"
+          label="Start Over"
+          icon="pi pi-refresh"
           (onClick)="clearQuery()"
           severity="secondary"
         ></p-button>
       </div>
 
       <div class="sql-preview" *ngIf="generatedSql">
-        <h3>Generated SQL</h3>
+        <h3>Generated SQL Query</h3>
         <pre>{{ generatedSql }}</pre>
       </div>
     </p-card>
   </div>
 
+  <!-- Query Results -->
   <div class="builder-section" *ngIf="queryResult">
-    <p-card header="Query Results">
-      <p>Total Rows: {{ queryResult.totalRows }}</p>
+    <p-card header="✅ Your Query Results">
+      <div class="helper-text">
+        <i class="pi pi-check-circle"></i>
+        <span><strong>Success!</strong> Found {{ queryResult.totalRows }} rows. You can scroll and navigate through the results below.</span>
+      </div>
+      
       <p-table
         [value]="queryResult.data"
         [paginator]="true"
         [rows]="10"
-        [rowsPerPageOptions]="[10, 25, 50]"
+        [rowsPerPageOptions]="[10, 25, 50, 100]"
         [scrollable]="true"
         scrollHeight="400px"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
       >
         <ng-template pTemplate="header">
           <tr>
@@ -186,63 +265,88 @@
 
 <!-- Join Dialog -->
 <p-dialog
-  header="Add Join"
+  header="🔗 Connect Two Tables"
   [(visible)]="showJoinDialog"
   [modal]="true"
-  [style]="{width: '50vw'}"
+  [style]="{width: '600px'}"
 >
   <div class="dialog-content">
+    <div class="helper-text">
+      <i class="pi pi-info-circle"></i>
+      <span>Select how to connect two tables based on matching column values.</span>
+    </div>
+
     <div class="form-field">
-      <label>Join Type</label>
+      <label>
+        <i class="pi pi-arrows-h"></i>
+        Connection Type
+      </label>
       <p-dropdown
         [options]="joinTypes"
         [(ngModel)]="newJoin.joinType"
         optionLabel="label"
         optionValue="value"
+        placeholder="Choose connection type..."
         [style]="{'width':'100%'}"
       ></p-dropdown>
     </div>
 
     <div class="form-field">
-      <label>Left Table</label>
+      <label>
+        <i class="pi pi-table"></i>
+        First Table
+      </label>
       <p-dropdown
         [options]="selectedTables"
         [(ngModel)]="newJoin.leftTable"
         optionLabel="tableName"
         optionValue="tableName"
+        placeholder="Select first table..."
         [style]="{'width':'100%'}"
       ></p-dropdown>
     </div>
 
     <div class="form-field" *ngIf="newJoin.leftTable">
-      <label>Left Column</label>
+      <label>
+        <i class="pi pi-arrow-right"></i>
+        Column from First Table
+      </label>
       <p-dropdown
         [options]="getTableColumns(newJoin.leftTable)"
         [(ngModel)]="newJoin.leftColumn"
         optionLabel="columnName"
         optionValue="columnName"
+        placeholder="Select column..."
         [style]="{'width':'100%'}"
       ></p-dropdown>
     </div>
 
     <div class="form-field">
-      <label>Right Table</label>
+      <label>
+        <i class="pi pi-table"></i>
+        Second Table
+      </label>
       <p-dropdown
         [options]="selectedTables"
         [(ngModel)]="newJoin.rightTable"
         optionLabel="tableName"
         optionValue="tableName"
+        placeholder="Select second table..."
         [style]="{'width':'100%'}"
       ></p-dropdown>
     </div>
 
     <div class="form-field" *ngIf="newJoin.rightTable">
-      <label>Right Column</label>
+      <label>
+        <i class="pi pi-arrow-right"></i>
+        Column from Second Table
+      </label>
       <p-dropdown
         [options]="getTableColumns(newJoin.rightTable)"
         [(ngModel)]="newJoin.rightColumn"
         optionLabel="columnName"
         optionValue="columnName"
+        placeholder="Select column..."
         [style]="{'width':'100%'}"
       ></p-dropdown>
     </div>
@@ -256,7 +360,7 @@
       severity="secondary"
     ></p-button>
     <p-button
-      label="Add"
+      label="Add Connection"
       icon="pi pi-check"
       (onClick)="addJoin()"
     ></p-button>
@@ -265,51 +369,72 @@
 
 <!-- Where Dialog -->
 <p-dialog
-  header="Add Filter Condition"
+  header="🔍 Add Filter Condition"
   [(visible)]="showWhereDialog"
   [modal]="true"
-  [style]="{width: '50vw'}"
+  [style]="{width: '600px'}"
 >
   <div class="dialog-content">
+    <div class="helper-text">
+      <i class="pi pi-info-circle"></i>
+      <span>Filter your results by specifying conditions. Example: Show only rows where age is greater than 25.</span>
+    </div>
+
     <div class="form-field" *ngIf="whereConditions.length > 0">
-      <label>Logical Operator</label>
+      <label>
+        <i class="pi pi-sitemap"></i>
+        Combine with Previous Using
+      </label>
       <p-dropdown
         [options]="logicalOperators"
         [(ngModel)]="newWhere.logicalOperator"
         optionLabel="label"
         optionValue="value"
+        placeholder="Choose AND or OR..."
         [style]="{'width':'100%'}"
       ></p-dropdown>
     </div>
 
     <div class="form-field">
-      <label>Column</label>
+      <label>
+        <i class="pi pi-list"></i>
+        Select Column to Filter
+      </label>
       <p-dropdown
         [options]="selectedColumns"
         [(ngModel)]="newWhere"
         optionLabel="columnName"
+        placeholder="Choose a column..."
         [style]="{'width':'100%'}"
         (onChange)="onWhereColumnSelect($event.value)"
       ></p-dropdown>
     </div>
 
     <div class="form-field">
-      <label>Operator</label>
+      <label>
+        <i class="pi pi-filter"></i>
+        Comparison Operator
+      </label>
       <p-dropdown
         [options]="operators"
         [(ngModel)]="newWhere.operator"
         optionLabel="label"
         optionValue="value"
+        placeholder="Choose comparison..."
         [style]="{'width':'100%'}"
       ></p-dropdown>
     </div>
 
     <div class="form-field">
-      <label>Value</label>
+      <label>
+        <i class="pi pi-pencil"></i>
+        Value to Compare
+      </label>
       <input
         type="text"
         pInputText
         [(ngModel)]="newWhere.value"
+        placeholder="Enter value..."
         [style]="{'width':'100%'}"
       />
     </div>
@@ -323,7 +448,7 @@
       severity="secondary"
     ></p-button>
     <p-button
-      label="Add"
+      label="Add Filter"
       icon="pi pi-check"
       (onClick)="addWhere()"
     ></p-button>

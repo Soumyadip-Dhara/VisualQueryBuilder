@@ -60,7 +60,7 @@ export class QueryBuilderComponent implements OnInit {
   foreignKeys: ForeignKeyInfo[] = [];
 
   // Selected items
-  selectedSchema: string = '';
+  selectedSchemas: string[] = [];
   selectedTables: TableInfo[] = [];
   selectedColumns: SelectedColumn[] = [];
   joins: JoinInfo[] = [];
@@ -130,8 +130,8 @@ export class QueryBuilderComponent implements OnInit {
         console.error('Error loading schemas:', error);
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to load schemas'
+          summary: 'Connection Issue',
+          detail: 'Unable to connect to the database. Please check if the database server is running.'
         });
         this.loading = false;
       }
@@ -139,7 +139,7 @@ export class QueryBuilderComponent implements OnInit {
   }
 
   onSchemaChange(): void {
-    if (this.selectedSchema) {
+    if (this.selectedSchemas && this.selectedSchemas.length > 0) {
       this.loadTables();
       this.loadForeignKeys();
     }
@@ -150,32 +150,55 @@ export class QueryBuilderComponent implements OnInit {
 
   loadTables(): void {
     this.loading = true;
-    this.metadataService.getTables(this.selectedSchema).subscribe({
-      next: (tables) => {
-        this.tables = tables.filter(t => t.schemaName === this.selectedSchema);
+    this.tables = [];
+    
+    // Load tables from all selected schemas
+    const tableRequests = this.selectedSchemas.map(schema => 
+      this.metadataService.getTables(schema)
+    );
+    
+    // Wait for all requests to complete
+    Promise.all(tableRequests.map(req => req.toPromise()))
+      .then(results => {
+        results.forEach(tables => {
+          if (tables) {
+            this.tables.push(...tables.filter(t => 
+              this.selectedSchemas.includes(t.schemaName)
+            ));
+          }
+        });
         this.loading = false;
-      },
-      error: (error) => {
+      })
+      .catch(error => {
         console.error('Error loading tables:', error);
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to load tables'
+          summary: 'Cannot Load Tables',
+          detail: 'Unable to retrieve tables from the selected schemas. Please try again.'
         });
         this.loading = false;
-      }
-    });
+      });
   }
 
   loadForeignKeys(): void {
-    this.metadataService.getForeignKeys(this.selectedSchema).subscribe({
-      next: (keys) => {
-        this.foreignKeys = keys;
-      },
-      error: (error) => {
+    this.foreignKeys = [];
+    
+    // Load foreign keys from all selected schemas
+    const fkRequests = this.selectedSchemas.map(schema => 
+      this.metadataService.getForeignKeys(schema)
+    );
+    
+    Promise.all(fkRequests.map(req => req.toPromise()))
+      .then(results => {
+        results.forEach(keys => {
+          if (keys) {
+            this.foreignKeys.push(...keys);
+          }
+        });
+      })
+      .catch(error => {
         console.error('Error loading foreign keys:', error);
-      }
-    });
+      });
   }
 
   onTableSelect(table: TableInfo): void {
@@ -239,15 +262,15 @@ export class QueryBuilderComponent implements OnInit {
     if (this.selectedTables.length < 2) {
       this.messageService.add({
         severity: 'warn',
-        summary: 'Warning',
-        detail: 'Please select at least 2 tables to create a join'
+        summary: 'Need More Tables',
+        detail: 'You need to select at least 2 tables before connecting them together.'
       });
       return;
     }
     this.newJoin = {
       joinType: 'INNER',
-      leftSchema: this.selectedSchema,
-      rightSchema: this.selectedSchema
+      leftSchema: this.selectedSchemas[0],
+      rightSchema: this.selectedSchemas[0]
     };
     this.showJoinDialog = true;
   }
@@ -277,8 +300,8 @@ export class QueryBuilderComponent implements OnInit {
     if (this.selectedColumns.length === 0) {
       this.messageService.add({
         severity: 'warn',
-        summary: 'Warning',
-        detail: 'Please select columns first'
+        summary: 'Need Columns First',
+        detail: 'Please select some columns before adding filters.'
       });
       return;
     }
@@ -313,8 +336,8 @@ export class QueryBuilderComponent implements OnInit {
     if (this.selectedColumns.length === 0) {
       this.messageService.add({
         severity: 'warn',
-        summary: 'Warning',
-        detail: 'Please select at least one column'
+        summary: 'No Columns Selected',
+        detail: 'Please choose at least one column to display in your results.'
       });
       return;
     }
@@ -332,8 +355,9 @@ export class QueryBuilderComponent implements OnInit {
         this.generatedSql = result.generatedSql;
         this.messageService.add({
           severity: 'success',
-          summary: 'Success',
-          detail: `Query executed successfully. ${result.totalRows} rows returned.`
+          summary: '🎉 Success!',
+          detail: `Great! Found ${result.totalRows} matching result${result.totalRows !== 1 ? 's' : ''}.`,
+          life: 5000
         });
         this.loading = false;
       },
@@ -341,8 +365,9 @@ export class QueryBuilderComponent implements OnInit {
         console.error('Error executing query:', error);
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to execute query: ' + (error.error?.message || error.message)
+          summary: 'Query Failed',
+          detail: 'Something went wrong while running your query. Please check your selections and try again.',
+          life: 8000
         });
         this.loading = false;
       }
@@ -350,7 +375,7 @@ export class QueryBuilderComponent implements OnInit {
   }
 
   clearQuery(): void {
-    this.selectedSchema = '';
+    this.selectedSchemas = [];
     this.selectedTables = [];
     this.selectedColumns = [];
     this.joins = [];
