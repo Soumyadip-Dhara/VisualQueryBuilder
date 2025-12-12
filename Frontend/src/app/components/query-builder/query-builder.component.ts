@@ -340,14 +340,10 @@ export class QueryBuilderComponent implements OnInit {
   addWhere(): void {
     if (this.newWhere.schemaName && this.newWhere.tableName &&
         this.newWhere.columnName && this.newWhere.value) {
-      this.whereConditions.push({
-        schemaName: this.newWhere.schemaName!,
-        tableName: this.newWhere.tableName!,
-        columnName: this.newWhere.columnName!,
-        operator: this.newWhere.operator!,
-        value: this.newWhere.value!,
-        logicalOperator: this.whereConditions.length > 0 ? this.newWhere.logicalOperator : undefined
-      });
+      this.whereConditions.push(this.createCondition(
+        this.newWhere,
+        this.whereConditions.length
+      ));
       this.showWhereDialog = false;
       this.newWhere = { operator: '=', logicalOperator: 'AND' };
     }
@@ -437,14 +433,10 @@ export class QueryBuilderComponent implements OnInit {
   addHaving(): void {
     if (this.newHaving.schemaName && this.newHaving.tableName &&
         this.newHaving.columnName && this.newHaving.value) {
-      this.havingConditions.push({
-        schemaName: this.newHaving.schemaName!,
-        tableName: this.newHaving.tableName!,
-        columnName: this.newHaving.columnName!,
-        operator: this.newHaving.operator!,
-        value: this.newHaving.value!,
-        logicalOperator: this.havingConditions.length > 0 ? this.newHaving.logicalOperator : undefined
-      });
+      this.havingConditions.push(this.createCondition(
+        this.newHaving,
+        this.havingConditions.length
+      ));
       this.showHavingDialog = false;
       this.newHaving = { operator: '=', logicalOperator: 'AND' };
     }
@@ -550,6 +542,18 @@ export class QueryBuilderComponent implements OnInit {
     this.newHaving.schemaName = column.schemaName;
     this.newHaving.tableName = column.tableName;
     this.newHaving.columnName = column.columnName;
+  }
+
+  // Helper method to create condition objects (used for both WHERE and HAVING)
+  private createCondition(source: Partial<WhereCondition>, existingCount: number): WhereCondition {
+    return {
+      schemaName: source.schemaName!,
+      tableName: source.tableName!,
+      columnName: source.columnName!,
+      operator: source.operator!,
+      value: source.value!,
+      logicalOperator: existingCount > 0 ? source.logicalOperator : undefined
+    };
   }
 }
 

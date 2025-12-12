@@ -77,8 +77,6 @@ namespace QueryBuilderAPI.Services
             // JOIN clauses
             if (request.Joins != null && request.Joins.Any())
             {
-                var joinedTables = new HashSet<string> { fromTable };
-                
                 foreach (var join in request.Joins)
                 {
                     var leftTableRef = $"\"{join.LeftSchema}\".\"{join.LeftTable}\"";
@@ -88,8 +86,6 @@ namespace QueryBuilderAPI.Services
                     sql.Append($" {join.JoinType} JOIN {rightTableRef}");
                     sql.Append($" ON {leftTableRef}.\"{join.LeftColumn}\"");
                     sql.Append($" = {rightTableRef}.\"{join.RightColumn}\"");
-                    
-                    joinedTables.Add(rightTableRef);
                 }
             }
 
@@ -132,7 +128,7 @@ namespace QueryBuilderAPI.Services
             }
 
             // OFFSET clause
-            if (request.Offset.HasValue && request.Offset.Value > 0)
+            if (request.Offset.HasValue && request.Offset.Value >= 0)
             {
                 sql.Append($" OFFSET {request.Offset.Value}");
             }
