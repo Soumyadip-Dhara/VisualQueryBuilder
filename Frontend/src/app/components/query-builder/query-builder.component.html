@@ -398,7 +398,7 @@
           </tr>
         </ng-template>
         <ng-template pTemplate="body" let-row>
-          <tr (click)="onRowClick(row)">
+          <tr>
         <td *ngFor="let col of getResultColumns()">
           {{ row[col] }}
         </td>
