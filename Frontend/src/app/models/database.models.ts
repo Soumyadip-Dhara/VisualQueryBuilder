@@ -53,13 +53,28 @@ export interface WhereCondition {
   logicalOperator?: string; // 'AND' | 'OR'
 }
 
+export interface OrderByClause {
+  schemaName: string;
+  tableName: string;
+  columnName: string;
+  direction: string; // 'ASC' | 'DESC'
+}
+
+export interface GroupByClause {
+  schemaName: string;
+  tableName: string;
+  columnName: string;
+}
+
 export interface QueryRequest {
   columns: SelectedColumn[];
   joins: JoinInfo[];
   whereConditions: WhereCondition[];
-  orderBy?: string;
-  orderDirection?: string;
+  orderBy?: OrderByClause[];
+  groupBy?: GroupByClause[];
+  havingConditions?: WhereCondition[];
   limit?: number;
+  offset?: number;
 }
 
 export interface QueryResult {

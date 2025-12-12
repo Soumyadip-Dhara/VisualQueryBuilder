@@ -9,6 +9,7 @@ import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { CardModule } from 'primeng/card';
 import { InputTextModule } from 'primeng/inputtext';
+import { InputNumberModule } from 'primeng/inputnumber';
 import { DialogModule } from 'primeng/dialog';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { AccordionModule } from 'primeng/accordion';
@@ -26,6 +27,8 @@ import {
   SelectedColumn,
   JoinInfo,
   WhereCondition,
+  OrderByClause,
+  GroupByClause,
   QueryRequest,
   QueryResult
 } from '../../models/database.models';
@@ -42,6 +45,7 @@ import {
     TableModule,
     CardModule,
     InputTextModule,
+    InputNumberModule,
     DialogModule,
     MultiSelectModule,
     AccordionModule,
@@ -65,10 +69,18 @@ export class QueryBuilderComponent implements OnInit {
   selectedColumns: SelectedColumn[] = [];
   joins: JoinInfo[] = [];
   whereConditions: WhereCondition[] = [];
+  orderByList: OrderByClause[] = [];
+  groupByList: GroupByClause[] = [];
+  havingConditions: WhereCondition[] = [];
+  limitValue?: number;
+  offsetValue?: number;
 
   // UI state
   showJoinDialog = false;
   showWhereDialog = false;
+  showOrderByDialog = false;
+  showGroupByDialog = false;
+  showHavingDialog = false;
   loading = false;
   
   // Query results
@@ -100,11 +112,24 @@ export class QueryBuilderComponent implements OnInit {
     { label: 'OR', value: 'OR' }
   ];
 
-  // New join/where objects
+  sortDirections = [
+    { label: 'Ascending (A-Z)', value: 'ASC' },
+    { label: 'Descending (Z-A)', value: 'DESC' }
+  ];
+
+  // New join/where/order/group objects
   newJoin: Partial<JoinInfo> = {
     joinType: 'INNER'
   };
   newWhere: Partial<WhereCondition> = {
+    operator: '=',
+    logicalOperator: 'AND'
+  };
+  newOrderBy: Partial<OrderByClause> = {
+    direction: 'ASC'
+  };
+  newGroupBy: Partial<GroupByClause> = {};
+  newHaving: Partial<WhereCondition> = {
     operator: '=',
     logicalOperator: 'AND'
   };
@@ -315,14 +340,10 @@ export class QueryBuilderComponent implements OnInit {
   addWhere(): void {
     if (this.newWhere.schemaName && this.newWhere.tableName &&
         this.newWhere.columnName && this.newWhere.value) {
-      this.whereConditions.push({
-        schemaName: this.newWhere.schemaName!,
-        tableName: this.newWhere.tableName!,
-        columnName: this.newWhere.columnName!,
-        operator: this.newWhere.operator!,
-        value: this.newWhere.value!,
-        logicalOperator: this.whereConditions.length > 0 ? this.newWhere.logicalOperator : undefined
-      });
+      this.whereConditions.push(this.createCondition(
+        this.newWhere,
+        this.whereConditions.length
+      ));
       this.showWhereDialog = false;
       this.newWhere = { operator: '=', logicalOperator: 'AND' };
     }
@@ -330,6 +351,99 @@ export class QueryBuilderComponent implements OnInit {
 
   removeWhere(index: number): void {
     this.whereConditions.splice(index, 1);
+  }
+
+  openOrderByDialog(): void {
+    if (this.selectedColumns.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Need Columns First',
+        detail: 'Please select some columns before adding sorting.'
+      });
+      return;
+    }
+    this.newOrderBy = { direction: 'ASC' };
+    this.showOrderByDialog = true;
+  }
+
+  addOrderBy(): void {
+    if (this.newOrderBy.schemaName && this.newOrderBy.tableName &&
+        this.newOrderBy.columnName && this.newOrderBy.direction) {
+      this.orderByList.push({
+        schemaName: this.newOrderBy.schemaName!,
+        tableName: this.newOrderBy.tableName!,
+        columnName: this.newOrderBy.columnName!,
+        direction: this.newOrderBy.direction!
+      });
+      this.showOrderByDialog = false;
+      this.newOrderBy = { direction: 'ASC' };
+    }
+  }
+
+  removeOrderBy(index: number): void {
+    this.orderByList.splice(index, 1);
+  }
+
+  openGroupByDialog(): void {
+    if (this.selectedColumns.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Need Columns First',
+        detail: 'Please select some columns before adding grouping.'
+      });
+      return;
+    }
+    this.newGroupBy = {};
+    this.showGroupByDialog = true;
+  }
+
+  addGroupBy(): void {
+    if (this.newGroupBy.schemaName && this.newGroupBy.tableName &&
+        this.newGroupBy.columnName) {
+      this.groupByList.push({
+        schemaName: this.newGroupBy.schemaName!,
+        tableName: this.newGroupBy.tableName!,
+        columnName: this.newGroupBy.columnName!
+      });
+      this.showGroupByDialog = false;
+      this.newGroupBy = {};
+    }
+  }
+
+  removeGroupBy(index: number): void {
+    this.groupByList.splice(index, 1);
+  }
+
+  openHavingDialog(): void {
+    if (this.groupByList.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Need GROUP BY First',
+        detail: 'HAVING conditions require GROUP BY. Please add GROUP BY first.'
+      });
+      return;
+    }
+    this.newHaving = {
+      operator: '=',
+      logicalOperator: 'AND'
+    };
+    this.showHavingDialog = true;
+  }
+
+  addHaving(): void {
+    if (this.newHaving.schemaName && this.newHaving.tableName &&
+        this.newHaving.columnName && this.newHaving.value) {
+      this.havingConditions.push(this.createCondition(
+        this.newHaving,
+        this.havingConditions.length
+      ));
+      this.showHavingDialog = false;
+      this.newHaving = { operator: '=', logicalOperator: 'AND' };
+    }
+  }
+
+  removeHaving(index: number): void {
+    this.havingConditions.splice(index, 1);
   }
 
   executeQuery(): void {
@@ -345,7 +459,12 @@ export class QueryBuilderComponent implements OnInit {
     const request: QueryRequest = {
       columns: this.selectedColumns,
       joins: this.joins,
-      whereConditions: this.whereConditions
+      whereConditions: this.whereConditions,
+      orderBy: this.orderByList.length > 0 ? this.orderByList : undefined,
+      groupBy: this.groupByList.length > 0 ? this.groupByList : undefined,
+      havingConditions: this.havingConditions.length > 0 ? this.havingConditions : undefined,
+      limit: this.limitValue,
+      offset: this.offsetValue
     };
 
     this.loading = true;
@@ -380,6 +499,11 @@ export class QueryBuilderComponent implements OnInit {
     this.selectedColumns = [];
     this.joins = [];
     this.whereConditions = [];
+    this.orderByList = [];
+    this.groupByList = [];
+    this.havingConditions = [];
+    this.limitValue = undefined;
+    this.offsetValue = undefined;
     this.queryResult = null;
     this.generatedSql = '';
     this.availableColumns = [];
@@ -400,6 +524,36 @@ export class QueryBuilderComponent implements OnInit {
     this.newWhere.schemaName = column.schemaName;
     this.newWhere.tableName = column.tableName;
     this.newWhere.columnName = column.columnName;
+  }
+
+  onOrderByColumnSelect(column: SelectedColumn): void {
+    this.newOrderBy.schemaName = column.schemaName;
+    this.newOrderBy.tableName = column.tableName;
+    this.newOrderBy.columnName = column.columnName;
+  }
+
+  onGroupByColumnSelect(column: SelectedColumn): void {
+    this.newGroupBy.schemaName = column.schemaName;
+    this.newGroupBy.tableName = column.tableName;
+    this.newGroupBy.columnName = column.columnName;
+  }
+
+  onHavingColumnSelect(column: SelectedColumn): void {
+    this.newHaving.schemaName = column.schemaName;
+    this.newHaving.tableName = column.tableName;
+    this.newHaving.columnName = column.columnName;
+  }
+
+  // Helper method to create condition objects (used for both WHERE and HAVING)
+  private createCondition(source: Partial<WhereCondition>, existingCount: number): WhereCondition {
+    return {
+      schemaName: source.schemaName!,
+      tableName: source.tableName!,
+      columnName: source.columnName!,
+      operator: source.operator!,
+      value: source.value!,
+      logicalOperator: existingCount > 0 ? source.logicalOperator : undefined
+    };
   }
 }
 

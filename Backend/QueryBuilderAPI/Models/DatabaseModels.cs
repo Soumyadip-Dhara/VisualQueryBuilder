@@ -38,9 +38,11 @@ namespace QueryBuilderAPI.Models
         public List<SelectedColumn> Columns { get; set; } = new();
         public List<JoinInfo> Joins { get; set; } = new();
         public List<WhereCondition> WhereConditions { get; set; } = new();
-        public string? OrderBy { get; set; }
-        public string? OrderDirection { get; set; }
+        public List<OrderByClause>? OrderBy { get; set; }
+        public List<GroupByClause>? GroupBy { get; set; }
+        public List<WhereCondition>? HavingConditions { get; set; }
         public int? Limit { get; set; }
+        public int? Offset { get; set; }
     }
 
     public class SelectedColumn
@@ -70,6 +72,21 @@ namespace QueryBuilderAPI.Models
         public string Operator { get; set; } = "="; // =, !=, >, <, >=, <=, LIKE, IN
         public string Value { get; set; } = string.Empty;
         public string? LogicalOperator { get; set; } // AND, OR
+    }
+
+    public class OrderByClause
+    {
+        public string SchemaName { get; set; } = string.Empty;
+        public string TableName { get; set; } = string.Empty;
+        public string ColumnName { get; set; } = string.Empty;
+        public string Direction { get; set; } = "ASC"; // ASC or DESC
+    }
+
+    public class GroupByClause
+    {
+        public string SchemaName { get; set; } = string.Empty;
+        public string TableName { get; set; } = string.Empty;
+        public string ColumnName { get; set; } = string.Empty;
     }
 
     public class QueryResult
