@@ -26,7 +26,8 @@
   - RIGHT JOIN
   - FULL JOIN
 - **Table and Column Selection**: Dropdowns for easy selection
-- **Multiple Joins**: Add as many joins as needed
+- **Multiple Joins**: Add as many joins as needed with proper SQL generation
+- **Fixed Multiple Joins**: Correctly handles complex multi-table joins
 - **Join Preview**: See configured joins in readable format
 - **Easy Removal**: Remove joins with a single click
 
@@ -47,18 +48,73 @@
 - **Multiple Conditions**: Chain conditions with logical operators
 - **Visual Display**: See all active filters at a glance
 
-### 5. Query Execution
+### 5. Sort Results (ORDER BY) - NEW! ✨
+- **Multiple Sort Columns**: Sort by one or more columns
+- **Sort Direction**: Choose ascending (A-Z) or descending (Z-A) order
+- **Visual Builder**: Dialog-based interface for adding sort criteria
+- **Sort Preview**: See all sorting rules at a glance
+- **Easy Management**: Add or remove sort rules with a single click
+
+### 6. Group Results (GROUP BY) - NEW! ✨
+- **Column Grouping**: Group rows by one or more columns
+- **Multiple Groups**: Add multiple grouping columns
+- **Visual Builder**: Dialog-based interface for adding groups
+- **Group Preview**: See all grouping columns at a glance
+- **Easy Management**: Add or remove groups with a single click
+
+### 7. Filter Groups (HAVING) - NEW! ✨
+- **Aggregate Filtering**: Filter grouped results (similar to WHERE but for aggregated data)
+- **Conditional Logic**: Use same operators as WHERE clause
+- **Logical Operators**: Combine multiple HAVING conditions with AND/OR
+- **Visual Builder**: Dialog-based interface for adding HAVING conditions
+- **Requires GROUP BY**: Automatically enabled only when GROUP BY is configured
+
+### 8. Result Pagination (LIMIT & OFFSET) - NEW! ✨
+- **LIMIT**: Specify maximum number of rows to return
+- **OFFSET**: Skip a specified number of rows
+- **Pagination Support**: Perfect for implementing page-by-page navigation
+- **Number Input**: Easy numeric input with increment/decrement buttons
+- **Performance**: Improves performance for large result sets
+
+### 9. Query Execution
 - **Execute Button**: Run the query with one click
 - **Loading Indicator**: Shows query is executing
 - **Error Handling**: Clear error messages if query fails
 - **Success Notifications**: Toast message with result count
 
-### 6. SQL Preview
+### 10. SQL Preview
 - **Generated SQL Display**: See the exact SQL query being executed
 - **Syntax Formatting**: Clean, readable SQL format
 - **Copy-able**: Can copy SQL for use elsewhere
+- **Complete Query**: Shows all clauses including ORDER BY, GROUP BY, HAVING, LIMIT, OFFSET
 
-### 7. Results Display
+### 11. Results Display
+- **Data Grid**: Professional table display with PrimeNG
+- **Pagination**: Built-in pagination controls
+- **Configurable Page Size**: 10, 25, 50, or 100 rows per page
+- **Scrollable**: Horizontal and vertical scrolling for large results
+- **Row Count**: Total rows displayed
+- **All Columns**: Dynamically displays all returned columns
+
+### 12. Query Management
+- **Clear Functionality**: Reset entire query with one click
+- **State Management**: Maintains selections across operations
+
+## Recent Updates (Latest Release)
+
+### Bug Fixes
+- **✅ Fixed Multiple Joins**: Corrected SQL generation for queries with multiple JOIN clauses
+  - Previously, the FROM clause always used the first selected column's table
+  - Now intelligently determines the base table from the first join's left table
+  - Properly handles complex multi-table join scenarios
+
+### New Features
+- **✨ ORDER BY**: Sort results by multiple columns with ascending/descending options
+- **✨ GROUP BY**: Group rows by one or more columns for aggregation
+- **✨ HAVING**: Filter grouped results with aggregate conditions
+- **✨ OFFSET**: Skip rows for pagination support (works with existing LIMIT)
+
+
 - **Data Grid**: Professional table display with PrimeNG
 - **Pagination**: Built-in pagination controls
 - **Configurable Page Size**: 10, 25, or 50 rows per page
@@ -195,13 +251,19 @@
 
 ## Future Enhancement Ideas
 
+### Completed Features ✅
+- [x] **ORDER BY and sorting**: Sort results by multiple columns
+- [x] **GROUP BY**: Group rows for aggregation
+- [x] **HAVING clauses**: Filter grouped results
+- [x] **LIMIT and OFFSET**: Pagination support
+- [x] **Multiple joins fix**: Proper SQL generation for complex joins
+
 ### Planned Features
 - [ ] Save and load queries
 - [ ] Query history
 - [ ] Export results (CSV, Excel, JSON)
 - [ ] Query templates
-- [ ] Aggregate functions (COUNT, SUM, AVG, etc.)
-- [ ] GROUP BY and HAVING clauses
+- [ ] Aggregate functions in SELECT (COUNT, SUM, AVG, MIN, MAX, etc.)
 - [ ] Subquery support
 - [ ] UNION operations
 - [ ] Query validation before execution
@@ -261,11 +323,15 @@
 - Sorting results
 
 ### Complex Queries
-- Multiple table joins
+- Multiple table joins (fixed and working correctly)
 - Multiple join types
 - Complex WHERE conditions
 - Multiple logical operators
 - Cross-schema queries
+- GROUP BY with aggregation
+- HAVING clauses for filtering groups
+- ORDER BY with multiple columns
+- Pagination with LIMIT and OFFSET
 
 ### Data Exploration
 - Browse schemas
